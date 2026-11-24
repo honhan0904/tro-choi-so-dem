@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bé Học Đếm Số Thứ Tự Cùng Động Vật</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Nunito', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .font-kid {
+      font-family: 'Comfortaa', cursive;
+    }
+    .bubble-shadow {
+      box-shadow: 0 8px 0 rgba(0, 0, 0, 0.12), 0 14px 20px rgba(0,0,0,0.08);
+    }
+    .inner-slot-shadow {
+      box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.12);
+    }
+    .btn-press:active {
+      transform: translateY(4px);
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.15);
+    }
+    @keyframes bounceSoft {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-bounce-soft {
+      animation: bounceSoft 2.5s infinite ease-in-out;
+    }
+    @keyframes pulseSelect {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); }
+      50% { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(236, 72, 153, 0); }
+    }
+    .selected-ball {
+      animation: pulseSelect 1.2s infinite;
+      border: 4px solid #ec4899 !important;
+    }
+    /* Hiệu ứng rung lắc khi điền sai */
+    @keyframes shakeWrong {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake-animation {
+      animation: shakeWrong 0.4s ease-in-out;
+    }
+    /* Hiệu ứng nhảy điểm bay lên */
+    @keyframes floatUpFade {
+      0% { transform: translate(-50%, 0) scale(0.6); opacity: 0; }
+      40% { transform: translate(-50%, -24px) scale(1.2); opacity: 1; }
+      100% { transform: translate(-50%, -48px) scale(1); opacity: 0; }
+    }
+    .floating-score {
+      position: absolute;
+      animation: floatUpFade 0.9s cubic-bezier(0.17, 0.67, 0.83, 0.67) forwards;
+      pointer-events: none;
+      font-weight: 900;
+      z-index: 40;
+    }
+    /* Hiệu ứng điểm nhảy trên bảng điểm */
+    @keyframes scorePop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.35) rotate(5deg); }
+      100% { transform: scale(1); }
+    }
+    .score-pop {
+      animation: scorePop 0.4s ease-out;
+    }
+    /* Hiệu ứng phóng to con vịt khác màu sau khi điền hết số */
+    @keyframes zoomSpecialDuck {
+      0%, 100% { transform: scale(1.35) translateY(-6px); }
+      50% { transform: scale(1.48) translateY(-12px); }
+    }
+    .special-duck-zoomed {
+      animation: zoomSpecialDuck 1.4s infinite ease-in-out !important;
+      z-index: 30;
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.9), 0 12px 20px rgba(0, 0, 0, 0.2) !important;
+      border-color: #f59e0b !important;
+      background-color: #fef3c7 !important;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-50 min-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden p-2 sm:p-4 relative"><a href="index.html" aria-label="Về trang chủ" style="position:fixed;left:14px;top:14px;z-index:1000;display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border:2px solid white;border-radius:999px;background:#ffffffed;color:#26324a;font:800 15px/1.2 system-ui,sans-serif;text-decoration:none;box-shadow:0 4px 14px #0002">← Trang chủ</a>
+
+  <!-- Màn hình chờ Bắt đầu (Không chữ, dùng biểu tượng Play trực quan) -->
+  <div id="startOverlay" class="fixed inset-0 z-50 bg-sky-900/60 backdrop-blur-md flex flex-col items-center justify-center p-4 transition-opacity duration-300">
+    <div class="bg-white rounded-3xl p-8 sm:p-10 shadow-2xl border-4 border-amber-300 flex flex-col items-center gap-6 animate-bounce-soft">
+      <div class="flex items-center gap-4 text-5xl sm:text-6xl">
+        <span>🐶</span>
+        <span>⏱️</span>
+        <span>🐶</span>
+      </div>
+      <button id="btnStartGame" class="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 hover:from-emerald-500 hover:to-green-700 text-white shadow-xl border-4 border-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 bubble-shadow">
+        <svg class="w-16 h-16 ml-2 fill-current" viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Header: Đồng hồ đếm ngược 3 phút, nút sửa bài và nút bật/tắt âm thanh -->
+  <header class="w-full max-w-6xl mx-auto py-1 px-3 flex items-center justify-between">
+    <div class="w-12 flex items-center justify-start">
+      <button id="btnEditMode" class="hidden bg-amber-400 hover:bg-amber-500 text-white w-11 h-11 rounded-full text-xl shadow-md border-2 border-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 bubble-shadow">
+        <span>✏️</span>
+      </button>
+    </div>
+    <!-- Đồng hồ đếm ngược 03:00 -->
+    <div id="timerBox" class="flex items-center gap-2 bg-white/95 px-5 py-1.5 rounded-full shadow-md border-2 border-indigo-300 text-indigo-900 font-black text-2xl sm:text-3xl transition-colors">
+      <span>⏳</span>
+      <span id="timerDisplay">03:00</span>
+    </div>
+    <div class="w-12 flex items-center justify-end">
+      <button id="btnSoundToggle" class="bg-white/80 hover:bg-white text-slate-700 w-10 h-10 rounded-full text-lg shadow-sm border border-slate-200 flex items-center justify-center transition-all">
+        <span id="soundIcon">🔔</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Khung trò chơi 3 Cột Chính (Hoàn toàn không chữ) -->
+  <main class="w-full max-w-7xl mx-auto my-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch">
+
+    <!-- CỘT 1: ĐÀN VỊT (MŨI TÊN TỪ TRÁI SANG PHẢI) -->
+    <section class="lg:col-span-5 bg-gradient-to-br from-yellow-50 to-amber-100 rounded-3xl p-3 sm:p-5 border-4 border-amber-300 shadow-lg flex flex-col justify-between relative overflow-hidden">
+      <div>
+        <!-- Điểm Cột 1: Ẩn lúc mới vào, hiện ra khi điền hết hoặc hết giờ -->
+        <div class="flex items-center justify-between mb-2">
+          <div id="scoreBoxDuck1" class="invisible opacity-0 flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 px-3 py-1 rounded-2xl shadow border-2 border-amber-300 font-black transition-all duration-300">
+            <span class="text-xl">⭐</span>
+            <span id="scoreTextDuck1" class="text-2xl font-black text-rose-700 bg-white/95 px-3 py-0.5 rounded-xl min-w-[46px] text-center shadow-inner">0</span>
+          </div>
+          <div class="w-10 h-10 rounded-2xl bg-amber-200/80 flex items-center justify-center text-xl shadow-inner">
+            🐶
+          </div>
+        </div>
+
+        <!-- Mũi tên chỉ hướng Trái -> Phải -->
+        <div class="bg-white/80 rounded-2xl p-2.5 mb-3 shadow-sm border border-amber-200 flex items-center justify-between">
+          <span class="text-2xl">🟢</span>
+          <div class="flex-1 mx-2 flex items-center">
+            <svg class="w-full h-8 text-amber-500 animate-pulse" viewBox="0 0 200 30" fill="none">
+              <path d="M5 15H180M180 15L165 5M180 15L165 25" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="text-2xl">🏁</span>
+        </div>
+      </div>
+
+      <!-- Khung chứa 4 con Vịt và 4 Ô Tròn Trống phía dưới (Không có chữ) -->
+      <div class="my-auto py-2">
+        <div id="duckContainer" class="grid grid-cols-4 gap-2 sm:gap-3 items-start">
+          <!-- Render tự động 4 con vịt -->
+        </div>
+
+        <!-- 4 Ô TRÒN HOÀN TOÀN TRỐNG (KHÔNG CHỮ, KHÔNG SỐ) -->
+        <div class="grid grid-cols-4 gap-2 sm:gap-3 mt-3 pt-3 border-t-2 border-dashed border-amber-300/80">
+          <div data-target-group="duck" data-target-index="0" data-correct="1" class="dropzone relative h-16 w-16 sm:h-20 sm:w-20 mx-auto rounded-full border-4 border-dashed border-amber-400 bg-white/80 flex items-center justify-center transition-all cursor-pointer inner-slot-shadow hover:bg-amber-100 hover:border-amber-500">
+          </div>
+          <div data-target-group="duck" data-target-index="1" data-correct="2" class="dropzone relative h-16 w-16 sm:h-20 sm:w-20 mx-auto rounded-full border-4 border-dashed border-amber-400 bg-white/80 flex items-center justify-center transition-all cursor-pointer inner-slot-shadow hover:bg-amber-100 hover:border-amber-500">
+          </div>
+          <div data-target-group="duck" data-target-index="2" data-correct="3" class="dropzone relative h-16 w-16 sm:h-20 sm:w-20 mx-auto rounded-full border-4 border-dashed border-amber-400 bg-white/80 flex items-center justify-center transition-all cursor-pointer inner-slot-shadow hover:bg-amber-100 hover:border-amber-500">
+          </div>
+          <div data-target-group="duck" data-target-index="3" data-correct="4" class="dropzone relative h-16 w-16 sm:h-20 sm:w-20 mx-auto rounded-full border-4 border-dashed border-amber-400 bg-white/80 flex items-center justify-center transition-all cursor-pointer inner-slot-shadow hover:bg-amber-100 hover:border-amber-500">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CỘT 2: KHO SỐ TRÒN (CỘT ĐỨNG Ở GIỮA - KHÔNG CHỮ) -->
+    <section class="lg:col-span-2 bg-gradient-to-b from-indigo-50 via-purple-50 to-indigo-100 rounded-3xl p-3 sm:p-4 border-4 border-indigo-300 shadow-xl flex flex-col justify-center items-center z-20">
+      <!-- Danh sách các quả bóng số xáo trộn lộn xộn ngẫu nhiên -->
+      <div id="numberPool" class="w-full flex lg:flex-col flex-row justify-around lg:justify-center items-center gap-3 sm:gap-5 py-2">
+        <!-- Render động số ngẫu nhiên lộn xộn -->
+      </div>
+    </section>
+
+    <!-- CỘT 3: ĐÀN THỎ (MŨI TÊN TỪ PHẢI SANG TRÁI - KHÔNG CHỮ) -->
+    <section class="lg:col-span-5 bg-gradient-to-bl from-teal-50 to-emerald-100 rounded-3xl p-3 sm:p-5 border-4 border-teal-300 shadow-lg flex flex-col justify-between relative overflow-hidden">
+      <div>
+        <!-- Điểm Cột 3: Ẩn lúc mới vào, hiện ra khi điền hết hoặc hết giờ -->
+        <div class="flex items-center justify-between mb-2">
+          <div class="w-10 h-10 rounded-2xl bg-teal-200/80 flex items-center justify-center text-xl shadow-inner">
+            🐶
+          </div>
+          <div id="scoreBoxDuck2" class="invisible opacity-0 flex items-center gap-1.5 bg-gradient-to-r from-teal-400 to-emerald-500 text-teal-950 px-3 py-1 rounded-2xl shadow border-2 border-teal-300 font-black transition-all duration-300">
+
+          </div>
+          <div id="scoreBoxDuck2" class="invisible opacity-0 flex items-center gap-1.5 bg-gradient-to-r from-teal-400 to-emerald-500 text-teal-950 px-3 py-1 rounded-2xl shadow border-2 border-teal-300 font-black transition-all duration-300">
+            <span class="text-xl">⭐</span>
+            <span id="scoreTextDuck2" class="text-2xl font-black text-rose-700 bg-white/95 px-3 py-0.5 rounded-xl min-w-[46px] text-center shadow-inner">0</span>
+          </div>
+        </div>
+
+        <!-- Mũi tên chỉ hướng PHẢI -> TRÁI -->
+        <div class="bg-white/80 rounded-2xl p-2.5 mb-3 shadow-sm border border-teal-200 flex items-center justify-between">
+          <span class="text-2xl">🏁</span>
+          <div class="flex-1 mx-2 flex items-center">
+            <svg class="w-full h-8 text-teal-500 animate-pulse" viewBox="0 0 200 30" fill="none">
+              <path d="M195 15H20M20 15L35 5M20 15L35 25" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="text-2xl">🟢</span>
+        </div>
+      </div>
+
+      <!-- Khung chứa 4 con Vịt và 4 Ô Tròn Trống phía dưới (Không chữ) -->
+      <div class="my-auto py-2">
+        <div id="duckContainerRight" class="grid grid-cols-4 gap-2 sm:gap-3 items-start">
+          <!-- Render tự động 4 con vịt cột 3 -->
+        </div>
+
+        <!-- 4 Ô TRÒN HOÀN TOÀN TRỐNG (KHÔNG CHỮ, KHÔNG SỐ) -->
+        <div class="grid grid-cols-4 gap-2 sm:gap-3 mt-3 pt-3 border-t-2 border-dashed border-teal-300/80">
+          <div data-target-group="duckRight" data-target-index="0" data-correct="4" class="dropzone relative h-16 w-16 sm:h-20 sm:w-20 mx-auto rounded-full border-4 border-dashed border-teal-400 bg-white/80 flex items-center justify-center transition-all cursor-pointer inner-slot-shadow hover:bg-teal-100 hover:border-teal-500">
+          </div>
+          <div data-target-group="duckRight" data-target-index="1" data-correct="3" class="dropzone relative h-16 w-16 sm:h-20 sm:w-20 mx-auto rounded-full border-4 border-dashed border-teal-400 bg-white/80 flex items-center justify-center transition-all cursor-pointer inner-slot-shadow hover:bg-teal-100 hover:border-teal-500">
+          </div>
+          <div data-target-group="duckRight" data-target-index="2" data-correct="2" class="dropzone relative h-16 w-16 sm:h-20 sm:w-20 mx-auto rounded-full border-4 border-dashed border-teal-400 bg-white/80 flex items-center justify-center transition-all cursor-pointer inner-slot-shadow hover:bg-teal-100 hover:border-teal-500">
+          </div>
+          <div data-target-group="duckRight" data-target-index="3" data-correct="1" class="dropzone relative h-16 w-16 sm:h-20 sm:w-20 mx-auto rounded-full border-4 border-dashed border-teal-400 bg-white/80 flex items-center justify-center transition-all cursor-pointer inner-slot-shadow hover:bg-teal-100 hover:border-teal-500">
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // --- Web Audio API cho hiệu ứng âm thanh phong phú ---
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playSelect() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(420, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(700, this.ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.08);
+      }
+      playScorePing() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        // Hợp âm ding-ding vui nhộn
+        const now = this.ctx.currentTime;
+        [587.33, 880, 1174.66].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + (i * 0.07));
+          gain.gain.setValueAtTime(0.4, now + (i * 0.07));
+          gain.gain.exponentialRampToValueAtTime(0.001, now + (i * 0.07) + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + (i * 0.07));
+          osc.stop(now + (i * 0.07) + 0.25);
+        });
+      }
+      playWrong() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(140, now + 0.22);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      }
+      playVictory() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          const startTime = this.ctx.currentTime + (i * 0.1);
+          gain.gain.setValueAtTime(0.4, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(startTime);
+          osc.stop(startTime + 0.4);
+        });
+      }
+    }
+
+    const sound = new SoundFX();
+
+    // --- State Game ---
+    let scoreDuck1 = 0; // Điểm Cột 1 (tối đa 40)
+    let scoreDuck2 = 0; // Điểm Cột 3 (tối đa 40)
+    let selectedNumber = null;
+    // Chú chó đen ở Cột 1 và Cột 3 cùng màu và xếp ở vị trí số 1 (index = 0)
+    let specialDuckIdx = 0;
+    let isGameActive = false;
+    let isGameFinished = false;
+    let isTeacherEditMode = false;
+    let remainingSeconds = 180; // 3 phút = 180 giây
+    let timerInterval = null;
+
+    // DOM Elements
+    const startOverlay = document.getElementById('startOverlay');
+    const btnStartGame = document.getElementById('btnStartGame');
+    const btnEditMode = document.getElementById('btnEditMode');
+    const timerBox = document.getElementById('timerBox');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const duckContainer = document.getElementById('duckContainer');
+    const duckContainerRight = document.getElementById('duckContainerRight');
+    const numberPool = document.getElementById('numberPool');
+    const scoreBoxDuck1 = document.getElementById('scoreBoxDuck1');
+    const scoreTextDuck1 = document.getElementById('scoreTextDuck1');
+    const scoreBoxDuck2 = document.getElementById('scoreBoxDuck2');
+    const scoreTextDuck2 = document.getElementById('scoreTextDuck2');
+    const dropzones = document.querySelectorAll('.dropzone');
+
+    // Bảng màu các quả bóng số 1, 2, 3, 4
+    const numberGradients = {
+      '1': 'from-rose-400 to-red-600 border-rose-200',
+      '2': 'from-amber-400 to-orange-500 border-amber-200',
+      '3': 'from-emerald-400 to-green-600 border-emerald-200',
+      '4': 'from-sky-400 to-blue-600 border-sky-200'
+    };
+
+    // Hàm xáo trộn lộn xộn mảng số (Fisher-Yates Shuffle)
+    function getShuffledNumbers() {
+      let arr = ['1', '2', '3', '4'];
+      do {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+      } while (arr.join('') === '1234');
+      return arr;
+    }
+
+    // Render các quả bóng số lộn xộn ở Cột 2
+    function renderShuffledNumbers() {
+      const shuffled = getShuffledNumbers();
+      numberPool.innerHTML = '';
+      shuffled.forEach(num => {
+        const btn = document.createElement('div');
+        btn.setAttribute('draggable', 'true');
+        btn.dataset.number = num;
+        btn.className = `number-card cursor-pointer active:cursor-grabbing w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br ${numberGradients[num]} text-white font-black text-3xl sm:text-4xl flex items-center justify-center bubble-shadow border-4 transition-transform hover:scale-110 select-none`;
+        btn.textContent = num;
+
+        btn.addEventListener('pointerdown', (e) => {
+          if (!isGameActive && !isTeacherEditMode) return;
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          sound.init();
+          sound.playSelect();
+
+          if (selectedNumber === num) {
+            selectedNumber = null;
+            clearSelectedHighlight();
+          } else {
+            selectedNumber = num;
+            clearSelectedHighlight();
+            btn.classList.add('selected-ball');
+          }
+        });
+
+        btn.addEventListener('dragstart', (e) => {
+          if (!isGameActive && !isTeacherEditMode) {
+            e.preventDefault();
+            return;
+          }
+          e.dataTransfer.setData('text/plain', num);
+          selectedNumber = num;
+          clearSelectedHighlight();
+          btn.classList.add('selected-ball');
+          sound.init();
+          sound.playSelect();
+        });
+
+        btn.addEventListener('dragend', () => {
+          clearSelectedHighlight();
+        });
+
+        numberPool.appendChild(btn);
+      });
+    }
+
+    // Render đàn chó (3 chó trắng, 1 chó đen ở vị trí số 1) hoàn toàn không có chữ chú thích
+    function renderAnimals() {
+      // CỘT 1: ĐÀN CHÓ (hướng nhìn sang phải)
+      duckContainer.innerHTML = '';
+      for (let i = 0; i < 4; i++) {
+        const isSpecial = (i === specialDuckIdx);
+        duckContainer.innerHTML += `
+          <div class="flex flex-col items-center">
+            <div id="${isSpecial ? 'specialDuckLeft' : 'duckLeft_' + i}" class="w-16 h-16 sm:w-20 sm:h-20 p-1 transition-all duration-500 ${isSpecial ? 'bg-amber-50/95 border-2 border-amber-400 shadow-md ring-2 ring-amber-300' : 'bg-white/80 shadow-sm'} rounded-2xl flex items-center justify-center animate-bounce-soft" style="animation-delay: ${i * 0.25}s;">
+              ${isSpecial ? getDogBlackSvg(false) : getDogWhiteSvg(false)}
+            </div>
+          </div>
+        `;
+      }
+
+      // CỘT 3: ĐÀN CHÓ (hướng nhìn sang trái)
+      duckContainerRight.innerHTML = '';
+      for (let i = 0; i < 4; i++) {
+        const isSpecial = (i === specialDuckIdx);
+        duckContainerRight.innerHTML += `
+          <div class="flex flex-col items-center">
+            <div id="${isSpecial ? 'specialDuckRight' : 'duckRight_' + i}" class="w-16 h-16 sm:w-20 sm:h-20 p-1 transition-all duration-500 ${isSpecial ? 'bg-amber-50/95 border-2 border-amber-400 shadow-md ring-2 ring-amber-300' : 'bg-white/80 shadow-sm'} rounded-2xl flex items-center justify-center animate-bounce-soft" style="animation-delay: ${i * 0.25}s;">
+              ${isSpecial ? getDogBlackSvg(true) : getDogWhiteSvg(true)}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Chó trắng đáng yêu
+    function getDogWhiteSvg(flip = false) {
+      return `
+        <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow ${flip ? 'scale-x-[-1]' : ''}">
+          <!-- Đuôi vẫy -->
+          <path d="M26 68 Q14 55 20 46" fill="none" stroke="#E2E8F0" stroke-width="6" stroke-linecap="round" />
+          <!-- Thân chó trắng -->
+          <ellipse cx="46" cy="68" rx="22" ry="17" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+          <!-- Vòng cổ đỏ -->
+          <path d="M46 53 Q58 56 66 50" fill="none" stroke="#EF4444" stroke-width="4" stroke-linecap="round" />
+          <circle cx="62" cy="54" r="3" fill="#FACC15" />
+          <!-- Chân -->
+          <rect x="34" y="78" width="8" height="10" rx="4" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5" />
+          <rect x="54" y="78" width="8" height="10" rx="4" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5" />
+          <!-- Tai rũ sau -->
+          <ellipse cx="43" cy="36" rx="7" ry="15" transform="rotate(20 43 36)" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1.5" />
+          <!-- Đầu chó trắng -->
+          <circle cx="60" cy="38" r="20" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+          <!-- Tai rũ trước -->
+          <ellipse cx="75" cy="38" rx="6.5" ry="14" transform="rotate(-15 75 38)" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1.5" />
+          <!-- Mõm -->
+          <ellipse cx="64" cy="44" rx="9" ry="7" fill="#F8FAFC" />
+          <!-- Mắt -->
+          <circle cx="55" cy="34" r="3.5" fill="#1E293B" />
+          <circle cx="56" cy="33" r="1.2" fill="#FFFFFF" />
+          <circle cx="69" cy="34" r="3.5" fill="#1E293B" />
+          <circle cx="70" cy="33" r="1.2" fill="#FFFFFF" />
+          <!-- Mũi & Lưỡi hồng -->
+          <ellipse cx="64" cy="41" rx="3.5" ry="2.5" fill="#1E293B" />
+          <path d="M59 46 Q64 50 69 46" fill="none" stroke="#1E293B" stroke-width="2" stroke-linecap="round" />
+          <path d="M62 48 Q64 53 66 48" fill="#F43F5E" />
+        </svg>
+      `;
+    }
+
+    // Chó đen khác màu (Cả 2 cột dùng chung cùng 1 màu đen, ở vị trí số 1)
+    function getDogBlackSvg(flip = false) {
+      return `
+        <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow ${flip ? 'scale-x-[-1]' : ''}">
+          <!-- Đuôi vẫy -->
+          <path d="M26 68 Q14 55 20 46" fill="none" stroke="#1E293B" stroke-width="6" stroke-linecap="round" />
+          <!-- Thân chó đen -->
+          <ellipse cx="46" cy="68" rx="22" ry="17" fill="#334155" stroke="#0F172A" stroke-width="1.8" />
+          <!-- Vòng cổ vàng -->
+          <path d="M46 53 Q58 56 66 50" fill="none" stroke="#F59E0B" stroke-width="4" stroke-linecap="round" />
+          <circle cx="62" cy="54" r="3" fill="#FEF08A" />
+          <!-- Chân -->
+          <rect x="34" y="78" width="8" height="10" rx="4" fill="#1E293B" />
+          <rect x="54" y="78" width="8" height="10" rx="4" fill="#1E293B" />
+          <!-- Tai rũ sau -->
+          <ellipse cx="43" cy="36" rx="7" ry="15" transform="rotate(20 43 36)" fill="#0F172A" />
+          <!-- Đầu chó đen -->
+          <circle cx="60" cy="38" r="20" fill="#334155" stroke="#0F172A" stroke-width="1.8" />
+          <!-- Tai rũ trước -->
+          <ellipse cx="75" cy="38" rx="6.5" ry="14" transform="rotate(-15 75 38)" fill="#0F172A" />
+          <!-- Mõm sáng nhẹ để rõ nét -->
+          <ellipse cx="64" cy="44" rx="9" ry="7" fill="#475569" />
+          <!-- Mắt -->
+          <circle cx="55" cy="34" r="3.5" fill="#FFFFFF" />
+          <circle cx="55.5" cy="34" r="2" fill="#0F172A" />
+          <circle cx="69" cy="34" r="3.5" fill="#FFFFFF" />
+          <circle cx="69.5" cy="34" r="2" fill="#0F172A" />
+          <!-- Mũi & Lưỡi hồng -->
+          <ellipse cx="64" cy="41" rx="3.5" ry="2.5" fill="#0F172A" />
+          <path d="M59 46 Q64 50 69 46" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" />
+          <path d="M62 48 Q64 53 66 48" fill="#FB7185" />
+        </svg>
+      `;
+    }
+
+    // --- Xử lý Tương tác & Điểm số ---
+    // Cập nhật điểm cho riêng từng cột (Không có nhãn chữ)
+    function updateScoreForGroup(group, pointsToAdd) {
+      if (group === 'duck') {
+        scoreDuck1 += pointsToAdd;
+        scoreTextDuck1.textContent = scoreDuck1;
+        scoreBoxDuck1.classList.remove('score-pop');
+        void scoreBoxDuck1.offsetWidth;
+        scoreBoxDuck1.classList.add('score-pop');
+      } else if (group === 'duckRight') {
+        scoreDuck2 += pointsToAdd;
+        scoreTextDuck2.textContent = scoreDuck2;
+        scoreBoxDuck2.classList.remove('score-pop');
+        void scoreBoxDuck2.offsetWidth;
+        scoreBoxDuck2.classList.add('score-pop');
+      }
+    }
+
+    // Hiệu ứng ngôi sao bay lên (+10 ⭐)
+    function showFloatingScore(element) {
+      const rect = element.getBoundingClientRect();
+      const floater = document.createElement('div');
+      floater.className = 'floating-score text-xl sm:text-2xl text-emerald-600 drop-shadow-md';
+      floater.innerHTML = '+10 ⭐';
+      floater.style.left = `${rect.left + rect.width / 2}px`;
+      floater.style.top = `${rect.top}px`;
+      document.body.appendChild(floater);
+      setTimeout(() => floater.remove(), 950);
+    }
+
+    function clearSelectedHighlight() {
+      document.querySelectorAll('.number-card').forEach(c => c.classList.remove('selected-ball'));
+    }
+
+    // Định dạng hiển thị đồng hồ MM:SS
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = (sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    // Bắt đầu đếm ngược 3 phút
+    function startGame() {
+      sound.init();
+      sound.playSelect();
+      isGameActive = true;
+      startOverlay.classList.add('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        startOverlay.style.display = 'none';
+      }, 300);
+
+      timerInterval = setInterval(() => {
+        if (isGameFinished) return;
+        remainingSeconds--;
+        timerDisplay.textContent = formatTime(remainingSeconds);
+
+        if (remainingSeconds <= 30) {
+          timerBox.classList.remove('border-indigo-300', 'text-indigo-900');
+          timerBox.classList.add('border-rose-500', 'text-rose-600', 'animate-pulse');
+        }
+
+        if (remainingSeconds <= 0) {
+          clearInterval(timerInterval);
+          finishAndEvaluateGame();
+        }
+      }, 1000);
+    }
+
+    // Kết thúc lượt làm bài (khi chọn hết 8 ô hoặc khi hết 3 phút): chấm điểm, hiện điểm và khóa tương tác
+    function finishAndEvaluateGame() {
+      if (isGameFinished) return;
+      isGameFinished = true;
+      isGameActive = false;
+      if (timerInterval) clearInterval(timerInterval);
+      timerBox.classList.remove('animate-pulse');
+
+      selectedNumber = null;
+      clearSelectedHighlight();
+
+      // Hiện nút Sửa bài (✏️) cho cô giáo
+      btnEditMode.classList.remove('hidden');
+
+      // Khóa kho số ở cột 2 cho tới khi cô giáo bấm nút Sửa bài
+      document.querySelectorAll('.number-card').forEach(card => {
+        card.setAttribute('draggable', 'false');
+        card.classList.remove('cursor-grab', 'active:cursor-grabbing', 'hover:scale-110');
+        card.classList.add('opacity-50', 'cursor-not-allowed');
+      });
+
+      evaluateAllZones();
+
+      // Hiện điểm số của Cột 1 và Cột 3
+      scoreBoxDuck1.classList.remove('invisible', 'opacity-0');
+      scoreBoxDuck1.classList.add('score-pop');
+
+      scoreBoxDuck2.classList.remove('invisible', 'opacity-0');
+      scoreBoxDuck2.classList.add('score-pop');
+
+      sound.playVictory();
+    }
+
+    // Hàm chấm điểm và cập nhật giao diện đúng/sai cho tất cả các ô
+    function evaluateAllZones() {
+      scoreDuck1 = 0;
+      scoreDuck2 = 0;
+
+      dropzones.forEach(zone => {
+        if (!isTeacherEditMode) {
+          zone.classList.remove('cursor-pointer', 'hover:bg-amber-100', 'hover:border-amber-500', 'hover:bg-teal-100', 'hover:border-teal-500');
+          zone.classList.add('cursor-default');
+        }
+
+        const placed = zone.dataset.placedNumber;
+        const correct = zone.dataset.correct;
+        const group = zone.dataset.targetGroup;
+
+        if (placed) {
+          zone.classList.remove('opacity-60');
+          const badge = zone.querySelector('.result-badge');
+          if (placed === correct) {
+            if (group === 'duck') scoreDuck1 += 10;
+            if (group === 'duckRight') scoreDuck2 += 10;
+            zone.classList.remove('border-dashed', 'border-amber-400', 'border-teal-400', 'border-rose-500', 'bg-rose-100/70');
+            zone.classList.add('border-emerald-500', 'border-4', 'bg-emerald-100/70');
+            if (badge) {
+              badge.textContent = '✓';
+              badge.className = 'result-badge absolute -top-2 -right-2 bg-emerald-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-black shadow border border-white';
+            }
+          } else {
+            zone.classList.remove('border-dashed', 'border-amber-400', 'border-teal-400', 'border-emerald-500', 'bg-emerald-100/70');
+            zone.classList.add('border-rose-500', 'border-4', 'bg-rose-100/70');
+            if (badge) {
+              badge.textContent = '✕';
+              badge.className = 'result-badge absolute -top-2 -right-2 bg-rose-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-black shadow border border-white';
+            }
+          }
+        } else {
+          zone.classList.add('opacity-60');
+        }
+      });
+
+      scoreTextDuck1.textContent = scoreDuck1;
+      scoreTextDuck2.textContent = scoreDuck2;
+
+      // Chỉ phóng to con thỏ trắng khác màu nếu cột đó trả lời đúng hoàn toàn (40/40 điểm)
+      const specialLeft = document.getElementById('specialDuckLeft');
+      if (specialLeft) {
+        if (scoreDuck1 === 40) {
+          specialLeft.classList.add('special-duck-zoomed');
+        } else {
+          specialLeft.classList.remove('special-duck-zoomed');
+        }
+      }
+
+      const specialRight = document.getElementById('specialDuckRight');
+      if (specialRight) {
+        if (scoreDuck2 === 40) {
+          specialRight.classList.add('special-duck-zoomed');
+        } else {
+          specialRight.classList.remove('special-duck-zoomed');
+        }
+      }
+    }
+
+    // Bật chế độ Sửa bài cho cô giáo chọn lại số khác
+    function enableTeacherEditMode() {
+      sound.init();
+      sound.playSelect();
+      isTeacherEditMode = true;
+
+      // Đổi trạng thái nút Sửa bài sang đang hoạt động (màu xanh lá)
+      btnEditMode.classList.remove('bg-amber-400', 'hover:bg-amber-500');
+      btnEditMode.classList.add('bg-emerald-500', 'ring-4', 'ring-emerald-200', 'scale-110');
+
+      // Mở khóa kho số ở cột 2 để cô giáo chọn lại
+      document.querySelectorAll('.number-card').forEach(card => {
+        card.setAttribute('draggable', 'true');
+        card.classList.remove('opacity-50', 'cursor-not-allowed');
+        card.classList.add('cursor-pointer', 'active:cursor-grabbing', 'hover:scale-110');
+      });
+
+      // Mở khóa lại các ô để nhận tương tác
+      dropzones.forEach(zone => {
+        zone.classList.remove('cursor-default', 'opacity-60');
+        zone.classList.add('cursor-pointer');
+      });
+    }
+
+    // Xử lý khi đặt số vào ô (Không cho chọn đáp án sai)
+    function handleDropNumber(zone, placedNumber) {
+      if (!isGameActive && !isTeacherEditMode) return;
+
+      const correctNumber = zone.dataset.correct;
+
+      // Không cho chọn đáp án sai: rung lắc, báo âm thanh sai và từ chối đặt vào ô
+      if (placedNumber !== correctNumber) {
+        sound.playWrong();
+        zone.classList.remove('shake-animation', 'border-rose-500', 'bg-rose-100');
+        void zone.offsetWidth;
+        zone.classList.add('shake-animation', 'border-rose-500', 'bg-rose-100');
+        setTimeout(() => {
+          zone.classList.remove('shake-animation', 'border-rose-500', 'bg-rose-100');
+        }, 450);
+        selectedNumber = null;
+        clearSelectedHighlight();
+        return;
+      }
+
+      zone.dataset.placedNumber = placedNumber;
+      zone.classList.remove('border-dashed');
+      zone.classList.add('border-solid');
+
+      zone.innerHTML = `
+        <div class="w-full h-full rounded-full bg-gradient-to-br ${numberGradients[placedNumber]} text-white font-black text-2xl sm:text-3xl flex items-center justify-center shadow-lg relative transform scale-95 transition-all">
+          ${placedNumber}
+          <span class="result-badge hidden"></span>
+        </div>
+      `;
+
+      selectedNumber = null;
+      clearSelectedHighlight();
+
+      sound.playScorePing();
+      showFloatingScore(zone);
+
+      // Nếu đang ở chế độ cô giáo sửa bài thì chấm lại ngay và cập nhật điểm
+      if (isTeacherEditMode) {
+        evaluateAllZones();
+        return;
+      }
+
+      // Kiểm tra xem đã điền đủ cả 8 ô chưa
+      const allFilled = Array.from(dropzones).every(z => z.dataset.placedNumber);
+      if (allFilled) {
+        setTimeout(() => {
+          finishAndEvaluateGame();
+        }, 300);
+      }
+    }
+
+    // Sự kiện Dropzone
+    dropzones.forEach(zone => {
+      zone.addEventListener('pointerdown', (e) => {
+        if (!isGameActive && !isTeacherEditMode) return;
+        sound.init();
+        if (selectedNumber) {
+          e.preventDefault();
+          handleDropNumber(zone, selectedNumber);
+        }
+      });
+
+      zone.addEventListener('click', () => {
+        if (!isGameActive && !isTeacherEditMode) return;
+        sound.init();
+        if (selectedNumber) {
+          handleDropNumber(zone, selectedNumber);
+        }
+      });
+
+      zone.addEventListener('dragover', (e) => {
+        if (!isGameActive && !isTeacherEditMode) return;
+        e.preventDefault();
+        zone.classList.add('scale-105', 'bg-amber-100');
+      });
+
+      zone.addEventListener('dragleave', () => {
+        zone.classList.remove('scale-105', 'bg-amber-100');
+      });
+
+      zone.addEventListener('drop', (e) => {
+        if (!isGameActive && !isTeacherEditMode) return;
+        e.preventDefault();
+        zone.classList.remove('scale-105', 'bg-amber-100');
+        const num = e.dataTransfer.getData('text/plain');
+        if (num) {
+          handleDropNumber(zone, num);
+        }
+      });
+    });
+
+    // Sự kiện nút Bắt đầu trên màn hình chờ
+    btnStartGame.addEventListener('click', startGame);
+
+    // Sự kiện nút Sửa bài cho cô giáo
+    btnEditMode.addEventListener('click', enableTeacherEditMode);
+
+    // Bật/tắt âm thanh
+    const btnSoundToggle = document.getElementById('btnSoundToggle');
+    const soundIcon = document.getElementById('soundIcon');
+    btnSoundToggle.addEventListener('click', () => {
+      sound.muted = !sound.muted;
+      soundIcon.textContent = sound.muted ? '🔇' : '🔔';
+    });
+
+    window.onload = function() {
+      renderAnimals();
+      renderShuffledNumbers();
+    };
+  </script>
+</body>
+</html>
