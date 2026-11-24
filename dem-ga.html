@@ -88,7 +88,15 @@
     }
   </style>
 </head>
-<body class="bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-50 min-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden p-2 sm:p-4 relative"><a href="index.html" aria-label="Về trang chủ" style="position:fixed;left:14px;top:14px;z-index:1000;display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border:2px solid white;border-radius:999px;background:#ffffffed;color:#26324a;font:800 15px/1.2 system-ui,sans-serif;text-decoration:none;box-shadow:0 4px 14px #0002">← Trang chủ</a>
+<body class="bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-50 min-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden p-2 sm:p-4 relative"><a href="bai-tap-2.html" aria-label="Về Bài tập 2" style="position:fixed;left:14px;top:14px;z-index:1000;display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border:2px solid white;border-radius:999px;background:#ffffffed;color:#26324a;font:800 15px/1.2 system-ui,sans-serif;text-decoration:none;box-shadow:0 4px 14px #0002">← Bài tập 2</a>
+
+  <!-- Canvas cho việc vẽ (khoanh tròn) -->
+  <canvas id="drawingCanvas" class="fixed inset-0 w-full h-full pointer-events-none z-40 touch-none"></canvas>
+
+  <!-- Thông báo hướng dẫn vẽ (ẩn mặc định) -->
+  <div id="drawInstruction" class="hidden fixed top-24 left-1/2 transform -translate-x-1/2 bg-white/95 px-6 py-3 rounded-3xl shadow-xl border-4 border-rose-400 text-rose-600 font-bold text-lg sm:text-xl z-50 animate-bounce text-center whitespace-nowrap">
+    Bé hãy dùng bút 🖍️ khoanh tròn vào cả con gà màu đỏ và số tương ứng nhé!
+  </div>
 
   <!-- Màn hình chờ Bắt đầu (Không chữ, dùng biểu tượng Play trực quan) -->
   <div id="startOverlay" class="fixed inset-0 z-50 bg-sky-900/60 backdrop-blur-md flex flex-col items-center justify-center p-4 transition-opacity duration-300">
@@ -107,10 +115,16 @@
   </div>
 
   <!-- Header: Đồng hồ đếm ngược 3 phút, nút sửa bài và nút bật/tắt âm thanh -->
-  <header class="w-full max-w-6xl mx-auto py-1 px-3 flex items-center justify-between">
-    <div class="w-12 flex items-center justify-start">
+  <header class="w-full max-w-6xl mx-auto py-1 px-3 flex items-center justify-between relative z-50">
+    <div class="flex items-center justify-start gap-2">
       <button id="btnEditMode" class="hidden bg-amber-400 hover:bg-amber-500 text-white w-11 h-11 rounded-full text-xl shadow-md border-2 border-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 bubble-shadow">
         <span>✏️</span>
+      </button>
+      <button id="btnPenMode" class="hidden bg-blue-400 hover:bg-blue-500 text-white w-11 h-11 rounded-full text-xl shadow-md border-2 border-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 bubble-shadow" title="Bút khoanh tròn">
+        <span>🖍️</span>
+      </button>
+      <button id="btnClearCanvas" class="hidden bg-slate-400 hover:bg-slate-500 text-white w-11 h-11 rounded-full text-xl shadow-md border-2 border-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 bubble-shadow" title="Xóa nét vẽ">
+        <span>🧹</span>
       </button>
     </div>
     <!-- Đồng hồ đếm ngược 03:00 -->
@@ -347,6 +361,88 @@
     const scoreBoxDuck2 = document.getElementById('scoreBoxDuck2');
     const scoreTextDuck2 = document.getElementById('scoreTextDuck2');
     const dropzones = document.querySelectorAll('.dropzone');
+
+    // --- Element cho tính năng Bút vẽ ---
+    const btnPenMode = document.getElementById('btnPenMode');
+    const btnClearCanvas = document.getElementById('btnClearCanvas');
+    const drawingCanvas = document.getElementById('drawingCanvas');
+    const drawInstruction = document.getElementById('drawInstruction');
+    const ctx = drawingCanvas.getContext('2d');
+    let isDrawingMode = false;
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    // Hàm thay đổi kích thước canvas
+    function resizeCanvas() {
+      drawingCanvas.width = window.innerWidth;
+      drawingCanvas.height = window.innerHeight;
+      ctx.strokeStyle = '#ef4444'; // Màu đỏ nổi bật để khoanh
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Logic vẽ trên canvas
+    function getPointerPos(e) {
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    drawingCanvas.addEventListener('pointerdown', (e) => {
+      if (!isDrawingMode) return;
+      isDrawing = true;
+      const pos = getPointerPos(e);
+      lastX = pos.x;
+      lastY = pos.y;
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(lastX, lastY);
+      ctx.stroke();
+    });
+
+    drawingCanvas.addEventListener('pointermove', (e) => {
+      if (!isDrawing || !isDrawingMode) return;
+      e.preventDefault(); // Ngăn chặn cuộn trang trên mobile khi vẽ
+      const pos = getPointerPos(e);
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+      lastX = pos.x;
+      lastY = pos.y;
+    });
+
+    drawingCanvas.addEventListener('pointerup', () => { isDrawing = false; });
+    drawingCanvas.addEventListener('pointercancel', () => { isDrawing = false; });
+    drawingCanvas.addEventListener('pointerout', () => { isDrawing = false; });
+
+    // Bật/tắt chế độ bút vẽ
+    btnPenMode.addEventListener('click', () => {
+      sound.init();
+      sound.playSelect();
+      isDrawingMode = !isDrawingMode;
+      if (isDrawingMode) {
+        btnPenMode.classList.remove('bg-blue-400', 'hover:bg-blue-500');
+        btnPenMode.classList.add('bg-blue-600', 'ring-4', 'ring-blue-300', 'scale-110');
+        drawingCanvas.classList.remove('pointer-events-none');
+        drawingCanvas.classList.add('pointer-events-auto');
+        drawInstruction.classList.add('hidden'); // Ẩn lời nhắc khi đã cầm bút
+      } else {
+        btnPenMode.classList.add('bg-blue-400', 'hover:bg-blue-500');
+        btnPenMode.classList.remove('bg-blue-600', 'ring-4', 'ring-blue-300', 'scale-110');
+        drawingCanvas.classList.add('pointer-events-none');
+        drawingCanvas.classList.remove('pointer-events-auto');
+      }
+    });
+
+    // Xóa toàn bộ nét vẽ
+    btnClearCanvas.addEventListener('click', () => {
+      sound.init();
+      sound.playSelect();
+      ctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+    });
 
     // Bảng màu các quả bóng số 1, 2, 3, 4
     const numberGradients = {
@@ -620,6 +716,11 @@
       // Hiện nút Sửa bài (✏️) cho cô giáo
       btnEditMode.classList.remove('hidden');
 
+      // Hiện nút Vẽ (🖍️), Xóa (🧹) và Lời nhắc cho bé khoanh tròn
+      btnPenMode.classList.remove('hidden');
+      btnClearCanvas.classList.remove('hidden');
+      drawInstruction.classList.remove('hidden');
+
       // Khóa kho số ở cột 2 cho tới khi cô giáo bấm nút Sửa bài
       document.querySelectorAll('.number-card').forEach(card => {
         card.setAttribute('draggable', 'false');
@@ -707,6 +808,16 @@
       sound.init();
       sound.playSelect();
       isTeacherEditMode = true;
+
+      // Tắt chế độ vẽ, ẩn công cụ vẽ và ẩn lời nhắc
+      isDrawingMode = false;
+      btnPenMode.classList.add('bg-blue-400', 'hover:bg-blue-500', 'hidden');
+      btnPenMode.classList.remove('bg-blue-600', 'ring-4', 'ring-blue-300', 'scale-110');
+      btnClearCanvas.classList.add('hidden');
+      drawInstruction.classList.add('hidden');
+      drawingCanvas.classList.add('pointer-events-none');
+      drawingCanvas.classList.remove('pointer-events-auto');
+      ctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
 
       // Đổi trạng thái nút Sửa bài sang đang hoạt động (màu xanh lá)
       btnEditMode.classList.remove('bg-amber-400', 'hover:bg-amber-500');

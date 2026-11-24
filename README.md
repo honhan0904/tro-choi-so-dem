@@ -1,7 +1,9 @@
-# Trò chơi số đếm
+# Trò chơi số thứ tự
 
-Bộ sáu trò chơi học đếm cùng heo, gà, chó, thỏ, mèo và vịt. Mở `index.html` để vào menu; mỗi trang trò chơi có nút quay về trang chủ.
+Menu chính chia trò chơi thành hai nhóm:
+- Bài tập 1: Mèo, Chó, Heo
+- Bài tập 2: Gà, Vịt, Thỏ
 
-## Chạy và xuất bản
+Mỗi trang trò chơi quay lại menu nhóm tương ứng. Mỗi menu nhóm có liên kết quay về menu chính.
 
-Đây là trang web tĩnh, không cần cài đặt. GitHub Pages được cấu hình để xuất bản từ nhánh `main` ở thư mục gốc.
+GitHub Pages xuất bản từ nhánh `main` ở thư mục gốc.
